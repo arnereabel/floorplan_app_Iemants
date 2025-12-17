@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Distribution App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #detail-view,
+            #detail-view * {
+                visibility: visible;
+            }
+
+            #detail-view {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 1rem;
+            }
+
+            #print-controls,
+            #back-to-floorplan,
+            #task-form button[type="submit"] {
+                display: none;
+            }
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #09f;
+            animation: spin 1s ease infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Floorplan styles */
+        #floorplan-container {
+            position: relative;
+            min-height: 800px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .workplace-box {
+            transition: box-shadow 0.2s, border-color 0.2s;
+            background-color: rgba(255, 255, 255, 0.85) !important;
+        }
+
+        .workplace-box.positioned {
+            position: absolute !important;
+        }
+
+        .workplace-box.edit-mode {
+            position: absolute !important;
+            cursor: move;
+        }
+
+        .workplace-box.edit-mode:hover {
+            box-shadow: 0 0 0 2px #3b82f6;
+        }
+
+        .workplace-box.edit-mode.dragging {
+            opacity: 0.7;
+            cursor: grabbing !important;
+        }
+
+        .resize-handle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #3b82f6;
+            border: 1px solid white;
+            border-radius: 50%;
+        }
+
+        .resize-handle.nw {
+            top: -5px;
+            left: -5px;
+            cursor: nw-resize;
+        }
+
+        .resize-handle.ne {
+            top: -5px;
+            right: -5px;
+            cursor: ne-resize;
+        }
+
+        .resize-handle.sw {
+            bottom: -5px;
+            left: -5px;
+            cursor: sw-resize;
+        }
+
+        .resize-handle.se {
+            bottom: -5px;
+            right: -5px;
+            cursor: se-resize;
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- Loader -->
+    <div id="loader" class="flex flex-col items-center justify-center min-h-screen">
+        <div class="spinner"></div>
+        <p id="loader-text" class="mt-4 text-gray-600">Loading application...</p>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app-container" class="hidden">
+
+        <!-- Floorplan View -->
+        <div id="floorplan-view" class="p-4 md:p-8">
+            <div class="max-w-7xl mx-auto">
+                <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Task Distribution App</h1>
+
+                <!-- Controls -->
+                <div class="flex flex-wrap gap-4 justify-center mb-6">
+                    <!-- Shift Selector -->
+                    <div class="flex items-center gap-2">
+                        <label for="shift-select" class="text-sm font-medium text-gray-700">Shift:</label>
+                        <select id="shift-select"
+                            class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border bg-white">
+                            <option value="dayshift">Day Shift</option>
+                            <option value="eveningshift">Evening Shift</option>
+                            <option value="nightshift">Night Shift</option>
+                        </select>
+                    </div>
+
+                    <!-- Edit Mode Toggle -->
+                    <button id="edit-mode-toggle"
+                        class="bg-gray-600 text-white px-4 py-2 rounded-md font-medium hover:bg-gray-700 transition-colors">
+                        📝 Edit Layout
+                    </button>
+
+                    <!-- Add Place Button -->
+                    <button id="add-place-btn"
+                        class="bg-green-600 text-white px-4 py-2 rounded-md font-medium hover:bg-green-700 transition-colors">
+                        ➕ Add Place
+                    </button>
+
+                    <!-- Floorplan Upload -->
+                    <label for="floorplan-upload-input"
+                        class="cursor-pointer bg-indigo-600 text-white px-4 py-2 rounded-md font-medium hover:bg-indigo-700 transition-colors inline-flex items-center gap-2">
+                        🖼️ Upload Floorplan
+                    </label>
+                    <input type="file" id="floorplan-upload-input" accept="image/*" class="hidden">
+                </div>
+
+                <!-- Floorplan Container -->
+                <div id="floorplan-container" class="bg-white rounded-lg shadow-lg p-4">
+                    <div id="floorplan-grid"
+                        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        <!-- Workplace boxes generated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task Detail View -->
+        <div id="detail-view" class="hidden p-4 md:p-8 max-w-4xl mx-auto">
+            <div class="bg-white p-6 rounded-lg shadow-xl">
+
+                <!-- Header and Print Controls -->
+                <div class="flex justify-between items-center mb-4">
+                    <button id="back-to-floorplan" class="text-blue-600 hover:underline">&larr; Back to
+                        Floorplan</button>
+                    <div id="print-controls" class="flex gap-2">
+                        <button type="submit" form="task-form"
+                            class="bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            Save Task
+                        </button>
+                        <button id="print-task"
+                            class="bg-gray-600 text-white px-4 py-2 rounded-md font-medium hover:bg-gray-700 transition-colors">
+                            Print Task
+                        </button>
+                    </div>
+                </div>
+
+                <h2 id="detail-header" class="text-2xl font-bold text-center text-gray-800 mb-6">Task Details</h2>
+
+                <!-- Task Form -->
+                <form id="task-form" class="space-y-6">
+                    <!-- Workplace Name -->
+                    <div>
+                        <label for="workplace-name" class="block text-sm font-medium text-gray-700">Workplace
+                            Name</label>
+                        <input type="text" id="workplace-name" name="workplace-name" placeholder="Enter workplace name"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border">
+                    </div>
+
+                    <!-- Worker Names -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="worker-name" class="block text-sm font-medium text-gray-700">Assigned Worker
+                                1</label>
+                            <input type="text" id="worker-name" name="worker-name" placeholder="Enter worker name"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border">
+                        </div>
+                        <div>
+                            <label for="worker-name-2" class="block text-sm font-medium text-gray-700">Assigned Worker
+                                2</label>
+                            <input type="text" id="worker-name-2" name="worker-name-2"
+                                placeholder="Enter worker name (optional)"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border">
+                        </div>
+                    </div>
+
+                    <!-- Task Description -->
+                    <div>
+                        <label for="task-description" class="block text-sm font-medium text-gray-700">Task
+                            Description</label>
+                        <textarea id="task-description" name="task-description" rows="6"
+                            placeholder="Enter task details..."
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"></textarea>
+                    </div>
+
+                    <!-- Project Information -->
+                    <div class="space-y-4 border-t pt-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Project Information</h3>
+
+                        <!-- Project Number -->
+                        <div>
+                            <label for="project-number" class="block text-sm font-medium text-gray-700">Project
+                                Number</label>
+                            <input type="text" id="project-number" name="project-number"
+                                placeholder="Enter project number"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border">
+                            <div class="mt-2">
+                                <label for="pdf-project-input"
+                                    class="cursor-pointer bg-indigo-600 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors inline-flex items-center gap-2">
+                                    📄 Upload PDF
+                                </label>
+                                <input type="file" id="pdf-project-input" accept="application/pdf" class="hidden">
+                                <div id="pdf-project-display" class="mt-2"></div>
+                            </div>
+                        </div>
+
+                        <!-- Phase -->
+                        <div>
+                            <label for="phase" class="block text-sm font-medium text-gray-700">Phase</label>
+                            <input type="text" id="phase" name="phase" placeholder="Enter phase"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border">
+                            <div class="mt-2">
+                                <label for="pdf-phase-input"
+                                    class="cursor-pointer bg-indigo-600 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors inline-flex items-center gap-2">
+                                    📄 Upload PDF
+                                </label>
+                                <input type="file" id="pdf-phase-input" accept="application/pdf" class="hidden">
+                                <div id="pdf-phase-display" class="mt-2"></div>
+                            </div>
+                        </div>
+
+                        <!-- Drawing -->
+                        <div>
+                            <label for="drawing" class="block text-sm font-medium text-gray-700">Drawing</label>
+                            <input type="text" id="drawing" name="drawing" placeholder="Enter drawing reference"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border">
+                            <div class="mt-2">
+                                <label for="pdf-drawing-input"
+                                    class="cursor-pointer bg-indigo-600 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors inline-flex items-center gap-2">
+                                    📄 Upload PDF
+                                </label>
+                                <input type="file" id="pdf-drawing-input" accept="application/pdf" class="hidden">
+                                <div id="pdf-drawing-display" class="mt-2"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Photo Upload -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Photos</label>
+                        <div class="flex gap-3 mb-4">
+                            <label for="camera-input"
+                                class="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 transition-colors flex items-center gap-2">
+                                📷 Take Photo
+                            </label>
+                            <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden">
+
+                            <label for="gallery-input"
+                                class="cursor-pointer bg-gray-600 text-white px-4 py-2 rounded-md font-medium hover:bg-gray-700 transition-colors flex items-center gap-2">
+                                🖼️ Choose Photo
+                            </label>
+                            <input type="file" id="gallery-input" accept="image/*" multiple class="hidden">
+                        </div>
+
+                        <!-- Photo Preview Gallery -->
+                        <div id="photo-gallery" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                            <!-- Photos will be added here -->
+                        </div>
+                    </div>
+
+
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="js/app.js"></script>
+
+</body>
+
+</html>
