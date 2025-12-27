@@ -10,7 +10,7 @@ A simplified task distribution application. Uses a Node.js backend with SQLite s
 - Upload photos and PDFs (Project, Phase, Drawing)
 - Print task details
 - Data persists in a SQLite database
-- Multiple shifts support (Day, Evening, Night) - Backend ready, Frontend pending UI
+- Multiple shifts support (Day, Evening, Night)
 
 ## Architecture
 
@@ -70,10 +70,15 @@ Then open `index.html` in a browser (or use a local server like `python -m http.
 
 ## VPS Deployment
 
+### Prerequisites on VPS
+- Docker Engine installed
+- Docker Compose installed
+- Port 80 available (or modify docker-compose.yml for different port)
+
 ### Step 1: Transfer Files
 ```bash
-# From your local machine
-scp -r backend docker-compose.yml nginx.conf index.html user@your-vps-ip:~/task_app/
+# From your local machine, copy all required files
+scp -r backend js docker-compose.yml nginx.conf index.html user@your-vps-ip:~/task_app/
 ```
 
 ### Step 2: Deploy on VPS
@@ -84,12 +89,47 @@ ssh user@your-vps-ip
 # Navigate to project
 cd ~/task_app
 
-# Build and start containers
+# Build and start containers (first time - will build backend image)
+docker-compose up -d --build
+
+# For subsequent restarts (no rebuild needed)
 docker-compose up -d
 
 # Check status
 docker ps
 docker-compose logs -f
+```
+
+### Step 3: Verify Deployment
+```bash
+# Check if containers are running
+docker ps
+
+# Test API health endpoint
+curl http://localhost/api/health
+
+# View logs if issues occur
+docker-compose logs backend
+docker-compose logs nginx
+```
+
+### Updating the Application
+```bash
+# On your local machine - transfer updated files
+scp -r backend js docker-compose.yml nginx.conf index.html user@your-vps-ip:~/task_app/
+
+# On VPS - rebuild and restart
+ssh user@your-vps-ip
+cd ~/task_app
+docker-compose down
+docker-compose up -d --build
+```
+
+### Data Backup
+```bash
+# Backup database and uploads from VPS
+docker cp task_backend:/app/data ./backup_data
+docker cp task_backend:/app/uploads ./backup_uploads
 ```
 
 ## API Endpoints

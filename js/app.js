@@ -1,5 +1,6 @@
 // Configuration
-const API_BASE = 'http://localhost:3001/api'; // Direct to backend for local testing
+// API base path for tasks.arnereabel.com/floorplan
+const API_BASE = window.API_BASE || '/floorplan/api';
 let currentShift = 'dayshift'; // Default shift
 
 // Global state
@@ -562,7 +563,7 @@ async function loadFloorplan() {
         if (data.filename) {
             currentFloorplan = data.filename;
             const container = document.getElementById('floorplan-container');
-            container.style.backgroundImage = `url('/api/floorplan/image/${data.filename}')`;
+            container.style.backgroundImage = `url('${API_BASE}/floorplan/image/${data.filename}')`;
         }
     } catch (error) {
         console.error('Error loading floorplan:', error);
@@ -586,7 +587,7 @@ async function uploadFloorplan(file) {
         currentFloorplan = data.filename;
 
         const container = document.getElementById('floorplan-container');
-        container.style.backgroundImage = `url('/api/floorplan/image/${data.filename}')`;
+        container.style.backgroundImage = `url('${API_BASE}/floorplan/image/${data.filename}')`;
 
         alert('Floorplan uploaded successfully!');
     } catch (error) {

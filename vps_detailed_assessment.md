@@ -1,391 +1,111 @@
-# VPS Detailed Assessment Report - FRESH NGINX DEPLOYMENT
-**Generated**: November 16, 2025 (Post-Cleanup & Fresh Deploy)
-**VPS Provider**: Hetzner (Helsinki datacenter)
-**Domain**: arnereabel.com
-**IP**: 46.62.216.163
-
-## Executive Summary
-The VPS has been successfully cleaned and redeployed with a fresh nginx container. All old containers, images, and volumes have been removed and replaced with a clean nginx:latest setup serving from `~/app_iemante/nginx/www/`. The system is running optimally with 710MB of space reclaimed and a healthy nginx container serving on port 80.
+# VPS Deployment Status Report
+**Date:** December 27, 2025  
+**Domain:** tasks.arnereabel.com  
+**VPS IP:** 46.62.216.163
 
 ---
 
-## 1. System Status
+## File Sync Status ✅
 
-### Uptime & Load
-```
-10:21:15 up 15 days, 22:42, 3 users, load average: 0.20, 0.05, 0.02
-```
+All local and VPS files are synchronized:
 
-### Hardware Resources
-#### CPU
-- **Cores**: 8 (AMD EPYC-Rome)
-- **Usage**: Minimal (load: 0.20)
-- **Processes**: ~197 total
-
-#### Memory (16GB total)
-```
-Total: 15Gi
-Used: 746Mi (5%)
-Free: 12Gi (80%)
-Available: 14Gi
-Buff/Cache: 2.3Gi
-Swap: 8GB (unused)
-```
-
-#### Disk (150GB total)
-```
-Filesystem: /dev/sda1 (ext4)
-Total: 150GB
-Used: 11GB (8%) - DOWN from 12GB
-Available: 134GB
-Status: Excellent capacity
-```
-
-### Operating System
-- **OS**: Ubuntu 24.04.3 LTS Linux
-- **Kernel**: 6.8.0-71-generic SMP PREEMPT_DYNAMIC
-- **Architecture**: x86_64
+| File | Local MD5 | VPS MD5 | Status |
+|------|-----------|---------|--------|
+| `index.html` | `723311f10c568cd6c19893c91b9e0c3e` | `723311f10c568cd6c19893c91b9e0c3e` | ✅ Synced |
+| `js/app.js` | `8becbf1331207dea0f07e780e8b7ba72` | `8becbf1331207dea0f07e780e8b7ba72` | ✅ Synced |
+| `nginx.conf` | `142030bc6390210538f703b368620d8a` | `142030bc6390210538f703b368620d8a` | ✅ Synced |
+| `docker-compose.yml` | `597e9ef83917ec23586f84a4e82b8c79` | `597e9ef83917ec23586f84a4e82b8c79` | ✅ Synced |
 
 ---
 
-## 2. Networking Configuration
+## Live Endpoints
 
-### Public Interfaces
-```
-IPv4: 46.62.216.163/32
-IPv6: 2a01:4f9:c012:3ce4::1/64
-```
+| URL | Description | Status |
+|-----|-------------|--------|
+| https://tasks.arnereabel.com/floorplan/ | Task Floor Planner App | ✅ Live |
+| https://tasks.arnereabel.com/welding/ | 3D Welding Simulator | ✅ Live |
+| https://tasks.arnereabel.com/floorplan/api/health | Backend Health Check | ✅ Healthy |
 
-### Firewall (UFW)
-```
-Status: ACTIVE (unchanged)
-Policy: DENY INCOMING, ALLOW OUTGOING
+---
 
-Open Ports:
-- 22/tcp (SSH) - IPv4 & IPv6
-- 80/tcp (HTTP) - IPv4 & IPv6
-- 443/tcp (HTTPS) - IPv4 & IPv6
+## Changes Made (Dec 27, 2025)
+
+### 1. Subdomain Migration
+- Migrated from `arnereabel.com` to `tasks.arnereabel.com/floorplan`
+- Updated Cloudflare tunnel config with `tasks.arnereabel.com` hostname
+- DNS route already configured
+
+### 2. API Path Fix
+- Changed `API_BASE` from `/api` to `/floorplan/api`
+- Fixed hardcoded `/api/floorplan/image/` paths to use `${API_BASE}`
+- Floorplan upload/display now works correctly
+
+### 3. Responsive Design
+- Container height: `60vh` (mobile) → `70vh` (tablet) → `80vh` (desktop)
+- Touch-friendly resize handles (18px on mobile)
+- Controls wrap on small screens
+- Smaller fonts/padding on mobile devices
+
+### 4. Cache Busting
+- Script tag uses `js/app.js?v=3` for cache invalidation
+- Increment version when deploying new changes
+
+---
+
+## Docker Status
+
+```
+Container: task_nginx     Status: Healthy (port 80)
+Container: task_backend   Status: Healthy (port 3001)
 ```
 
 ---
 
-## 3. Security Configuration
+## Deployment Commands Reference
 
-### SSH Security
-- **Login Method**: Public key only (ED25519)
-- **Root Access**: Disabled
-- **Authentication**: Active and working
+### Deploy Updated Files
+```bash
+# From local project directory
+scp index.html js/app.js nginx.conf docker-compose.yml arner@46.62.216.163:~/task_app/
 
-### Intrusion Prevention (Fail2Ban)
-```
-Status: ACTIVE
-Running Since: Oct 31, 2025 (15+ days)
-Total Banned IPs: 4,501+
-Currently Banned: Multiple (active blocks)
+# Restart containers on VPS
+ssh arner@46.62.216.163 "cd ~/task_app && docker-compose down && docker-compose up -d"
 ```
 
-### System Security
-- **AppArmor**: Enabled
-- **seccomp**: Enabled
-- **cgroups**: v2 enabled with systemd driver
-
----
-
-## 4. Docker Configuration - FRESH NGINX DEPLOYMENT
-
-### Docker Engine Version
-```
-Client & Server: 28.5.1 (Community)
-API: 1.51
+### Quick Restart (nginx only)
+```bash
+ssh arner@46.62.216.163 "cd ~/task_app && docker-compose restart nginx"
 ```
 
-### System Overview
-```
-Containers: 1 running (nginx_fresh - HEALTHY ✅)
-Images: 1 (nginx:latest)
-Storage Driver: overlay2
-CGroup Driver: systemd
-```
-
-### Running Container: nginx_fresh
-```
-Container ID: bd4e43f90d24
-Image: nginx:latest (1.29.3)
-Status: Up and healthy ✅
-Health: Healthy
-Ports: 0.0.0.0:80->80/tcp, [::]:80->80/tcp
-Restart Policy: unless-stopped
-Volumes:
-  - ~/app_iemante/nginx/www → /usr/share/nginx/html (read-only)
-  - ~/app_iemante/nginx/conf/nginx.conf → /etc/nginx/nginx.conf (read-only)
-Network: app_iemante_app_network (172.18.0.0/16)
-```
-
-### Networks
-```
-bridge                          bridge  local   (default)
-host                           host    local   (default)
-none                           null    local   (default)
-app_iemante_app_network        bridge  local   ✅ ACTIVE (nginx container)
-```
-
-### Volumes
-```
-No named volumes - using bind mounts only
-Bind mounts:
-  - ~/app_iemante/nginx/www (serving web content)
-  - ~/app_iemante/nginx/conf/nginx.conf (nginx configuration)
+### Check Logs
+```bash
+ssh arner@46.62.216.163 "cd ~/task_app && docker-compose logs -f"
 ```
 
 ---
 
-## 5. Cleanup Actions Performed
+## VPS Directory Structure
 
-### ✅ Docker Container Cleanup
 ```
-Stopped Containers:
-- nginx_web (nginx:1.27-alpine)
-- app_backend (robotics_deployment-backend)
-
-Removed Containers: 2 total
-```
-
-### ✅ Docker Image Cleanup
-```
-Removed Images:
-- robotics_deployment-backend:latest (451MB)
-- Dangling image 254006609c8e (451MB)
-- nginx:1.27-alpine (48.2MB)
-
-Total Images Removed: 3
-Build Cache Objects Removed: 23
-```
-
-### ✅ Volume Cleanup
-```
-Removed Volumes: 2
-- robotics_deployment_backend_data
-- robotics_deployment_backend_uploads
-```
-
-### ✅ Network Cleanup
-```
-Removed Networks: 1
-- robotics_deployment_proxy_network
-```
-
-### ✅ Space Reclaimed
-```
-Docker System Prune Results:
-Total Reclaimed Space: 710.2MB ✅
-
-Disk Before: 12GB used
-Disk After: 11GB used
-Net Improvement: 1GB freed
-```
-
-### ✅ Directory Cleanup
-```
-Removed from ~/robotics_deployment:
-- backend/ directory (entire backend application)
-- docker-compose.yml file
-
-Remaining Structure:
-├── nginx/           (kept for static serving)
-│   ├── conf/       (nginx configuration)
-│   └── www/        (web root)
-└── ros2/           (ROS2 directory - kept)
+~/task_app/
+├── backend/
+│   ├── Dockerfile
+│   ├── server.js
+│   └── package.json
+├── js/
+│   └── app.js
+├── welding/
+│   └── index.html
+├── docker-compose.yml
+├── index.html
+└── nginx.conf
 ```
 
 ---
 
-## 6. Current Directory Structure
+## Next Steps / Recommendations
 
-### Home Directory (Final Clean State)
-```
-app_iemante/    32KB  ✅ Active (fresh nginx deployment)
-vps-config.md   8KB   ✅ VPS configuration documentation
-
-REMOVED:
-❌ robotics_deployment/  (72KB) - Permanently deleted
-❌ tasks/                (752KB) - Permanently deleted
-
-Total Space Freed from Directories: 824KB
-```
-
-### Clean Home Directory Structure
-```
-/home/arner/
-├── app_iemante/              (32KB) - Active nginx deployment
-│   ├── docker-compose.yml
-│   └── nginx/
-│       ├── conf/nginx.conf
-│       ├── www/index.html
-│       └── ssl/
-└── vps-config.md            (8KB) - Configuration documentation
-
-Hidden system files preserved:
-.ssh, .bash_history, .bashrc, .profile, .cache, .config, .docker, .local
-```
-
----
-
-## 7. Services & Applications Status
-
-### Current Running Services
-```
-SSH Server: ✅ Running (port 22)
-Firewall (UFW): ✅ Active
-Fail2Ban: ✅ Active (blocking attacks)
-Docker: ✅ Active with 1 healthy container
-Nginx: ✅ Running (nginx:latest v1.29.3)
-```
-
-### Web Application Status
-```
-Status: ✅ ACTIVE AND HEALTHY
-- Nginx container: Running (nginx_fresh)
-- Web server: nginx:latest (1.29.3)
-- Port 80: ✅ Responding with HTTP 200 OK
-- Healthcheck: ✅ Passing
-- Content: Serving from ~/app_iemante/nginx/www/
-- Config: Custom nginx.conf with gzip compression
-
-Application serving: Fresh Start welcome page (1267 bytes)
-```
-
-### Application Directory Structure
-```
-~/app_iemante/
-├── docker-compose.yml          (Docker orchestration)
-└── nginx/
-    ├── conf/
-    │   └── nginx.conf         (Custom configuration)
-    ├── www/
-    │   └── index.html         (Welcome page - 1267 bytes)
-    └── ssl/                   (Reserved for future SSL certs)
-```
-
----
-
-## 8. Performance Metrics - FRESH DEPLOYMENT
-
-| Metric | Value | Status |
-|--------|-------|--------|
-| **Uptime** | 15+ days | ✅ Stable |
-| **CPU Load** | 0.20 average | ✅ Minimal |
-| **Memory Usage** | 5% (746MB) | ✅ Excellent |
-| **Disk Usage** | 8% (11GB/150GB) | ✅ Plenty of space |
-| **Containers** | 1 (healthy) | ✅ Nginx running |
-| **Images** | 1 (nginx:latest) | ✅ Fresh pull |
-| **Web Response** | HTTP 200 OK | ✅ Working |
-| **Docker Networks** | 4 (+ app_network) | ✅ Configured |
-
----
-
-## 9. Recommendations for Fresh Start
-
-### Phase 1: Infrastructure Preparation
-- [ ] Plan new application architecture
-- [ ] Design deployment strategy (Docker vs traditional)
-- [ ] Document required services and dependencies
-
-### Phase 2: Application Deployment
-- [ ] Set up new Docker environment or traditional deployment
-- [ ] Configure web server (nginx, Apache, etc.)
-- [ ] Set up backend service if needed
-
-### Phase 3: Monitoring & Maintenance
-- [ ] Set up application monitoring/logging
-- [ ] Configure backup strategy
-- [ ] Plan update/maintenance procedures
-
-### Phase 4: Security Hardening (Already Done)
-- ✅ SSH key-only authentication
-- ✅ Firewall (UFW) properly configured
-- ✅ Fail2Ban active and blocking attacks
-- ✅ System security features enabled
-
----
-
-## 10. Available Resources for New Deployment
-
-| Resource | Capacity | Status |
-|----------|----------|--------|
-| **CPU** | 8 cores (AMD EPYC) | ✅ Available |
-| **RAM** | 15GB total (14GB free) | ✅ Abundant |
-| **Storage** | 134GB available | ✅ Excellent |
-| **Network** | IPv4 + IPv6 | ✅ Operational |
-| **Firewall** | Configurable UFW | ✅ Ready |
-
----
-
-## 11. Cleanup Summary
-
-### ✅ Completed Actions
-- [x] Removed backend directory from robotics_deployment
-- [x] Deleted docker-compose.yml
-- [x] Stopped all running containers
-- [x] Removed all containers
-- [x] Deleted all Docker images
-- [x] Removed all Docker volumes
-- [x] Removed custom Docker networks
-- [x] Ran docker system prune
-- [x] Reclaimed 710.2MB of space
-
-### ✅ System Health
-- [x] No orphaned containers
-- [x] No unused images
-- [x] No dangling volumes
-- [x] No custom networks
-- [x] All default services intact
-- [x] Security measures active
-
-### 🎯 Fresh Start Status: **COMPLETE & DEPLOYED** ✅
-
-The VPS is now running with:
-- 🔹 Fresh nginx:latest container (v1.29.3)
-- 🔹 Serving on port 80 (HTTP 200 OK)
-- 🔹 Custom configuration with gzip compression
-- 🔹 Healthcheck passing
-- 🔹 710MB disk space reclaimed
-- 🔹 Clean, organized directory structure
-- 🔹 Strong security posture maintained
-
----
-
-## 12. Deployment Summary
-
-### ✅ Completed Deployment
-- Fresh nginx:latest container running
-- HTTP server responding on port 80
-- Custom nginx.conf with performance optimizations
-- Welcome page deployed and serving
-- Docker compose orchestration in place
-- Healthchecks configured and passing
-
-### 🌐 Access Points
-- **HTTP**: http://arnereabel.com (via Cloudflare proxy)
-- **Direct HTTP**: http://46.62.216.163:80
-- **Container**: nginx_fresh (healthy)
-
-### 📁 Deployment Location
-- **Base**: `~/app_iemante/`
-- **Web Root**: `~/app_iemante/nginx/www/`
-- **Config**: `~/app_iemante/nginx/conf/nginx.conf`
-- **Compose**: `~/app_iemante/docker-compose.yml`
-
-### 🔮 Future Enhancements
-- [ ] Add SSL certificates (Let's Encrypt)
-- [ ] Enable HTTPS on port 443
-- [ ] Deploy production application
-- [ ] Set up automated backups
-- [ ] Configure monitoring/logging
-
-**Initial Cleanup**: November 16, 2025, 10:21 UTC
-**Nginx Deployment**: November 16, 2025, 10:36 UTC  
-**Final Directory Cleanup**: November 16, 2025, 10:41 UTC
-**Total Downtime**: 0 minutes (SSH remained active throughout)
-**Total Disk Space Freed**: 711MB (710.2MB Docker + 0.824MB directories)
-**Home Directory Status**: Pristine - only app_iemante/ and vps-config.md
-**Overall Health Score**: 🟢 **100/100** (Completely clean, optimal performance)
+- [ ] Set up automatic backups for SQLite database
+- [ ] Consider SSL certificate renewal automation
+- [ ] Monitor disk space and container health
+- [ ] Add error logging/monitoring

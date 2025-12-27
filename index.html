@@ -54,18 +54,53 @@
             }
         }
 
-        /* Floorplan styles */
+        /* Floorplan styles - Responsive */
         #floorplan-container {
             position: relative;
-            min-height: 800px;
+            min-height: 60vh;
+            height: auto;
             background-size: contain;
             background-repeat: no-repeat;
-            background-position: center;
+            background-position: center top;
+            overflow: auto;
         }
 
+        /* Full height on larger screens */
+        @media (min-width: 768px) {
+            #floorplan-container {
+                min-height: 70vh;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            #floorplan-container {
+                min-height: 80vh;
+            }
+        }
+
+        /* Workplace boxes - responsive sizing */
         .workplace-box {
-            transition: box-shadow 0.2s, border-color 0.2s;
-            background-color: rgba(255, 255, 255, 0.85) !important;
+            transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+            background-color: rgba(255, 255, 255, 0.9) !important;
+            font-size: 0.875rem;
+            min-height: 80px;
+        }
+
+        /* Smaller boxes on mobile */
+        @media (max-width: 640px) {
+            .workplace-box {
+                font-size: 0.75rem;
+                padding: 0.5rem !important;
+                min-height: 60px;
+            }
+
+            .workplace-box h3 {
+                font-size: 0.875rem !important;
+            }
+
+            .workplace-box p {
+                font-size: 0.7rem !important;
+            }
         }
 
         .workplace-box.positioned {
@@ -88,35 +123,77 @@
 
         .resize-handle {
             position: absolute;
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             background: #3b82f6;
-            border: 1px solid white;
+            border: 2px solid white;
             border-radius: 50%;
+            z-index: 10;
+        }
+
+        /* Larger touch targets on mobile */
+        @media (max-width: 768px) {
+            .resize-handle {
+                width: 18px;
+                height: 18px;
+            }
         }
 
         .resize-handle.nw {
-            top: -5px;
-            left: -5px;
+            top: -6px;
+            left: -6px;
             cursor: nw-resize;
         }
 
         .resize-handle.ne {
-            top: -5px;
-            right: -5px;
+            top: -6px;
+            right: -6px;
             cursor: ne-resize;
         }
 
         .resize-handle.sw {
-            bottom: -5px;
-            left: -5px;
+            bottom: -6px;
+            left: -6px;
             cursor: sw-resize;
         }
 
         .resize-handle.se {
-            bottom: -5px;
-            right: -5px;
+            bottom: -6px;
+            right: -6px;
             cursor: se-resize;
+        }
+
+        /* Responsive controls */
+        @media (max-width: 640px) {
+            #floorplan-view h1 {
+                font-size: 1.5rem !important;
+            }
+
+            .flex-wrap.gap-4 button,
+            .flex-wrap.gap-4 label,
+            .flex-wrap.gap-4 select {
+                font-size: 0.75rem;
+                padding: 0.5rem 0.75rem;
+            }
+        }
+
+        /* Pinch-zoom support for mobile */
+        #floorplan-container {
+            touch-action: pan-x pan-y;
+        }
+
+        /* Fullscreen mode for better mobile experience */
+        #floorplan-container.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            min-height: 100vh;
+            background-color: white;
+            padding: 1rem;
+            overflow: auto;
         }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -323,7 +400,7 @@
 
     </div>
 
-    <script src="js/app.js"></script>
+    <script src="js/app.js?v=3"></script>
 
 </body>
 
